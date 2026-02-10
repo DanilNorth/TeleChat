@@ -226,7 +226,11 @@
                 const channel = supabase
                     .channel('public:messages')
                     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-                        setMessages((prev) => [...prev, payload.new]);
+                        setMessages((prev) => {
+                            // Проверка на дубликаты (если мы уже добавили сообщение вручную при отправке)
+                            if (prev.find(msg => msg.id === payload.new.id)) return prev;
+                            return [...prev, payload.new];
+                        });
                     })
                     .subscribe();
 
@@ -244,14 +248,27 @@
                 e.preventDefault();
                 if (!newMessage.trim()) return;
 
-                const { error } = await supabase.from('messages').insert({
-                    user_id: session.user.id,
-                    email: session.user.email,
-                    content: newMessage
-                });
+                const messageText = newMessage;
+                setNewMessage(''); // Очищаем поле сразу для скорости
 
-                if (error) console.error('Error sending:', error);
-                setNewMessage('');
+                const { data, error } = await supabase
+                    .from('messages')
+                    .insert({
+                        user_id: session.user.id,
+                        email: session.user.email,
+                        content: messageText
+                    })
+                    .select(); // Важно: получаем созданное сообщение обратно
+
+                if (error) {
+                    console.error('Error sending:', error);
+                } else if (data && data[0]) {
+                    // Мгновенно добавляем в чат (чтобы не ждать Realtime)
+                    setMessages((prev) => {
+                         if (prev.find(msg => msg.id === data[0].id)) return prev;
+                         return [...prev, data[0]];
+                    });
+                }
             };
 
             const handleLogout = async () => {
