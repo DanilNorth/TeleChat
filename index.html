@@ -60,15 +60,18 @@
         // ==========================================
         // SETTINGS (FILL THESE AFTER CREATING SUPABASE PROJECT)
         // ==========================================
-        const SUPABASE_URL = "https://kclhcflsufvkgtkpkejj.supabase.co"; 
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtjbGhjZmxzdWZ2a2d0a3BrZWpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzQyNzcsImV4cCI6MjA4NjMxMDI3N30.-novSFaRy_tLnwaWwAuLCehBPIKLlyW5F0n2fF9Mta4"; 
+        const SUPABASE_URL = "ТВОЙ_SUPABASE_URL"; 
+        const SUPABASE_KEY = "ТВОЙ_SUPABASE_ANON_KEY"; 
         // ==========================================
 
         const { useState, useEffect, useRef } = React;
         const { createClient } = supabase;
 
         let supabaseClient = null;
-        if (SUPABASE_URL !== "ТВОЙ_SUPABASE_URL" && SUPABASE_URL.length > 10) {
+        // Улучшенная логика проверки: инициализируем, если значения изменены
+        const isDefault = (val) => val.includes("ТВОЙ_SUPABASE") || val === "";
+        
+        if (!isDefault(SUPABASE_URL) && !isDefault(SUPABASE_KEY)) {
             supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
         }
 
@@ -90,6 +93,8 @@
                     });
 
                     return () => subscription.unsubscribe();
+                } else {
+                    setIsConfigured(false);
                 }
             }, []);
 
@@ -115,8 +120,8 @@
                 <div className="h-screen flex items-center justify-center p-4 text-center">
                     <div className="bg-red-900/20 border border-red-500 p-6 rounded-lg max-w-lg">
                         <h1 className="text-2xl font-bold mb-4 text-red-400">Требуется настройка</h1>
-                        <p className="mb-4">Пожалуйста, откройте файл <code>index.html</code> в редакторе кода.</p>
-                        <p className="mb-4">Найдите переменные <code>SUPABASE_URL</code> и <code>SUPABASE_KEY</code> и вставьте туда данные из своего проекта Supabase.</p>
+                        <p className="mb-4">Пожалуйста, проверьте переменные <code>SUPABASE_URL</code> и <code>SUPABASE_KEY</code> в коде (строки 43-44).</p>
+                        <p className="text-sm text-gray-400">Убедитесь, что вы удалили текст "ТВОЙ_SUPABASE_..." и вставили свои ключи из настроек проекта Supabase (Settings -> API).</p>
                     </div>
                 </div>
             )
@@ -135,14 +140,18 @@
                 setError('');
 
                 let result;
-                if (isLogin) {
-                    result = await supabase.auth.signInWithPassword({ email, password });
-                } else {
-                    result = await supabase.auth.signUp({ email, password });
-                }
+                try {
+                    if (isLogin) {
+                        result = await supabase.auth.signInWithPassword({ email, password });
+                    } else {
+                        result = await supabase.auth.signUp({ email, password });
+                    }
 
-                if (result.error) {
-                    setError(result.error.message);
+                    if (result.error) {
+                        setError(result.error.message);
+                    }
+                } catch (e) {
+                    setError("Ошибка сети или неверный URL Supabase");
                 }
                 setLoading(false);
             };
@@ -158,7 +167,7 @@
                         <input
                             type="email"
                             placeholder="Email"
-                            className="w-full p-3 bg-[#2c2c2c] rounded-xl border border-transparent focus:border-blue-500 outline-none transition"
+                            className="w-full p-3 bg-[#2c2c2c] rounded-xl border border-transparent focus:border-blue-500 outline-none transition text-white"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -166,7 +175,7 @@
                         <input
                             type="password"
                             placeholder="Пароль"
-                            className="w-full p-3 bg-[#2c2c2c] rounded-xl border border-transparent focus:border-blue-500 outline-none transition"
+                            className="w-full p-3 bg-[#2c2c2c] rounded-xl border border-transparent focus:border-blue-500 outline-none transition text-white"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -241,7 +250,6 @@
                 const content = newMessage;
                 const rToId = replyTo ? replyTo.id : null;
                 
-                // Оптимистичное удаление UI состояния
                 setNewMessage('');
                 const lastReplyTo = replyTo;
                 setReplyTo(null);
@@ -259,7 +267,6 @@
 
                     if (error) {
                         console.error('Full Send Error Object:', error);
-                        // Возвращаем текст в поле, если произошла ошибка
                         setNewMessage(content);
                         setReplyTo(lastReplyTo);
                         alert("Ошибка при отправке: " + error.message);
