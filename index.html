@@ -4,285 +4,331 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TeleChat</title>
-    <!-- Tailwind CSS для стилей -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React и ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel для компиляции JSX в браузере -->
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel для JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Иконки Lucide -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
-        /* Telegram-подобный скроллбар */
+        /* Telegram-like Background */
+        body {
+            background-color: #0f0f0f;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .chat-bg {
+            background-image: url("https://web.telegram.org/img/bg_0.png"); 
+            background-repeat: repeat;
+            background-size: auto;
+        }
+        .message-own {
+            background-color: #8774e1;
+            border-bottom-right-radius: 0;
+        }
+        .message-other {
+            background-color: #212121;
+            border-bottom-left-radius: 0;
+        }
+        /* Скроллбар */
         ::-webkit-scrollbar {
             width: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: transparent;
+            background: transparent; 
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(0,0,0,0.2);
+            background: #444; 
             border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(0,0,0,0.3);
-        }
-        
-        .bg-telegram-pattern {
-            background-color: #87a3b3;
-            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239db3c1' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E");
         }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <!-- Основной скрипт приложения -->
-    <script type="text/babel" data-type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        // --- ВСТАВЬ СЮДА СВОЙ КОНФИГ FIREBASE ---
-        // Замени объект ниже на тот, что получишь в консоли Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyChJGuqz8XJZrd3qEsw_7VJsr4XEi3sOa8",
-  authDomain: "telechat-44367.firebaseapp.com",
-  projectId: "telechat-44367",
-  storageBucket: "telechat-44367.firebasestorage.app",
-  messagingSenderId: "740567276838",
-  appId: "1:740567276838:web:bcbeefe6da0ff3424b75e7",
-  measurementId: "G-FX9EFFEVZ0"
-};
-        // ----------------------------------------
-
-        // Инициализация Firebase (только если конфиг заполнен)
-        let auth, db;
-        try {
-             const app = initializeApp(firebaseConfig);
-             auth = getAuth(app);
-             db = getFirestore(app);
-        } catch (e) {
-            console.error("Ошибка инициализации Firebase. Убедитесь, что вы вставили конфигурацию.", e);
-        }
+    <script type="text/babel">
+        // ==========================================
+        // НАСТРОЙКИ (ЗАПОЛНИ ЭТО ПОСЛЕ СОЗДАНИЯ ПРОЕКТА)
+        // ==========================================
+        const SUPABASE_URL = "ТВОЙ_SUPABASE_URL"; 
+        const SUPABASE_KEY = "ТВОЙ_SUPABASE_ANON_KEY"; 
+        // ==========================================
 
         const { useState, useEffect, useRef } = React;
+        const { createClient } = supabase;
 
-        // Компонент: Экран входа
-        function LoginScreen({ onLogin }) {
-            const handleGoogleLogin = async () => {
-                if (!auth) {
-                    alert("Firebase не настроен! Прочитайте инструкцию.");
-                    return;
+        // Инициализация клиента (если ключи не пустые)
+        let supabaseClient = null;
+        if (SUPABASE_URL !== "ТВОЙ_SUPABASE_URL") {
+            supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+
+        function App() {
+            const [session, setSession] = useState(null);
+            const [isConfigured, setIsConfigured] = useState(false);
+
+            useEffect(() => {
+                if (supabaseClient) {
+                    setIsConfigured(true);
+                    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                        setSession(session);
+                    });
+
+                    const {
+                        data: { subscription },
+                    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+                        setSession(session);
+                    });
+
+                    return () => subscription.unsubscribe();
                 }
-                const provider = new GoogleAuthProvider();
-                try {
-                    await signInWithPopup(auth, provider);
-                } catch (error) {
-                    console.error("Ошибка входа:", error);
-                    alert("Ошибка входа: " + error.message);
-                }
-            };
+            }, []);
+
+            if (!isConfigured) {
+                return <SetupScreen />;
+            }
 
             return (
-                <div className="flex items-center justify-center min-h-screen bg-gray-100">
-                    <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md text-center">
-                        <div className="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <i data-lucide="send" className="w-12 h-12 text-white ml-1"></i>
-                        </div>
-                        <h1 className="text-2xl font-bold mb-2 text-gray-800">TeleChat</h1>
-                        <p className="text-gray-500 mb-8">Добро пожаловать в мессенджер</p>
-                        
-                        <button 
-                            onClick={handleGoogleLogin}
-                            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-xl transition duration-300 flex items-center justify-center gap-2"
-                        >
-                            <span>Войти через Google</span>
-                        </button>
-                        
-                        {!auth && (
-                            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
-                                ⚠ Конфигурация Firebase не найдена. Откройте файл и добавьте ключи.
-                            </div>
+                <div className="h-screen w-full flex justify-center bg-black">
+                    <div className="w-full max-w-md h-full bg-[#1c1c1c] flex flex-col shadow-2xl overflow-hidden relative">
+                        {!session ? (
+                            <Auth supabase={supabaseClient} />
+                        ) : (
+                            <Chat session={session} supabase={supabaseClient} />
                         )}
                     </div>
                 </div>
             );
         }
 
-        // Компонент: Сообщение
-        function Message({ text, uid, photoURL, createdAt, displayName, isOwn }) {
-            const time = createdAt?.seconds 
-                ? new Date(createdAt.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
-                : '...';
-
+        // Экран заглушка, если не введены ключи
+        function SetupScreen() {
             return (
-                <div className={`flex w-full mt-2 space-x-3 max-w-xs md:max-w-md ${isOwn ? 'ml-auto justify-end' : ''}`}>
-                    {!isOwn && (
-                        <img src={photoURL || `https://ui-avatars.com/api/?name=${displayName}`} alt="avatar" className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-300" />
-                    )}
-                    <div>
-                        <div className={`relative p-3 shadow-sm ${isOwn ? 'bg-blue-100 rounded-l-2xl rounded-tr-2xl' : 'bg-white rounded-r-2xl rounded-tl-2xl'}`}>
-                             {!isOwn && <p className="text-xs text-blue-500 font-bold mb-1">{displayName}</p>}
-                            <p className="text-sm text-gray-800 break-words leading-relaxed">{text}</p>
-                            <span className={`text-[10px] block text-right mt-1 ${isOwn ? 'text-blue-400' : 'text-gray-400'}`}>
-                                {time} {isOwn && <span className="text-blue-500">✓✓</span>}
-                            </span>
-                        </div>
+                <div className="h-screen flex items-center justify-center p-4 text-center">
+                    <div className="bg-red-900/20 border border-red-500 p-6 rounded-lg max-w-lg">
+                        <h1 className="text-2xl font-bold mb-4 text-red-400">Требуется настройка</h1>
+                        <p className="mb-4">Пожалуйста, открой файл <code>index.html</code> в редакторе кода.</p>
+                        <p className="mb-4">Найди строки <code>SUPABASE_URL</code> и <code>SUPABASE_KEY</code> в начале скрипта и вставь туда данные из своего проекта Supabase.</p>
+                        <p className="text-sm text-gray-400">Инструкция есть в ответе бота.</p>
                     </div>
                 </div>
-            );
+            )
         }
 
-        // Основной компонент
-        function App() {
-            const [user, setUser] = useState(null);
-            const [messages, setMessages] = useState([]);
-            const [newMessage, setNewMessage] = useState("");
-            const bottomRef = useRef(null);
+        // Компонент Авторизации
+        function Auth({ supabase }) {
+            const [loading, setLoading] = useState(false);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [isLogin, setIsLogin] = useState(true);
+            const [error, setError] = useState('');
 
-            // Следим за статусом авторизации
-            useEffect(() => {
-                if (!auth) return;
-                const unsubscribe = onAuthStateChanged(auth, (u) => {
-                    setUser(u);
-                });
-                return () => unsubscribe();
-            }, []);
-
-            // Загрузка сообщений в реальном времени
-            useEffect(() => {
-                if (!db) return;
-                const q = query(collection(db, "messages"), orderBy("createdAt"), limit(100));
-                const unsubscribe = onSnapshot(q, (snapshot) => {
-                    const msgs = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-                    setMessages(msgs);
-                    // Автоскролл вниз при новом сообщении
-                    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-                });
-                return () => unsubscribe();
-            }, []);
-
-            // Инициализация иконок Lucide после рендера
-            useEffect(() => {
-                if (window.lucide) {
-                    window.lucide.createIcons();
-                }
-            });
-
-            const handleSend = async (e) => {
+            const handleAuth = async (e) => {
                 e.preventDefault();
-                if (newMessage.trim() === "" || !auth) return;
+                setLoading(true);
+                setError('');
 
-                const { uid, displayName, photoURL } = user;
-                
-                try {
-                    await addDoc(collection(db, "messages"), {
-                        text: newMessage,
-                        createdAt: serverTimestamp(),
-                        uid,
-                        displayName,
-                        photoURL
-                    });
-                    setNewMessage("");
-                } catch (err) {
-                    console.error("Ошибка отправки:", err);
-                    alert("Не удалось отправить сообщение. Проверьте права доступа в Firestore.");
+                let result;
+                if (isLogin) {
+                    result = await supabase.auth.signInWithPassword({ email, password });
+                } else {
+                    result = await supabase.auth.signUp({ email, password });
                 }
-            };
 
-            const handleLogout = () => {
-                signOut(auth);
+                if (result.error) {
+                    setError(result.error.message);
+                } else if (!isLogin) {
+                    // Автоматический вход после регистрации, если включен auto confirm
+                    if(result.data.session) {
+                       // Успешная регистрация и вход
+                    } else {
+                        setError('Проверьте почту для подтверждения (если включено подтверждение)');
+                    }
+                }
+                setLoading(false);
             };
-
-            if (!user) {
-                return <LoginScreen />;
-            }
 
             return (
-                <div className="flex h-screen bg-white overflow-hidden">
-                    {/* Боковая панель (Левая часть) - на мобильных скрыта, если открыт чат (упрощение: всегда показываем чат) */}
-                    <div className="hidden md:flex flex-col w-80 border-r border-gray-200 h-full">
-                        <div className="p-4 bg-white border-b border-gray-100 flex justify-between items-center">
-                            <div className="font-bold text-gray-700">TeleChat</div>
-                            <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition">
-                                <i data-lucide="log-out" className="w-5 h-5"></i>
-                            </button>
-                        </div>
-                        <div className="overflow-y-auto flex-1">
-                            {/* Список "чатов" (фейковые для стиля) */}
-                            <div className="p-3 bg-blue-50 border-l-4 border-blue-500 cursor-pointer hover:bg-gray-50 transition">
-                                <h3 className="font-semibold text-gray-800 text-sm">Общий чат</h3>
-                                <p className="text-gray-500 text-xs truncate">Все сообщения приходят сюда...</p>
-                            </div>
-                            <div className="p-3 hover:bg-gray-50 cursor-pointer transition opacity-60">
-                                <h3 className="font-semibold text-gray-800 text-sm">Избранное</h3>
-                                <p className="text-gray-500 text-xs truncate">Заметки для себя</p>
-                            </div>
-                        </div>
+                <div className="flex-1 flex flex-col justify-center items-center p-6 bg-[#1c1c1c]">
+                    <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mb-6">
+                        <i data-lucide="send" className="w-10 h-10 text-white ml-[-4px]"></i>
                     </div>
-
-                    {/* Основное окно чата */}
-                    <div className="flex-1 flex flex-col h-full bg-telegram-pattern relative">
+                    <h2 className="text-2xl font-bold mb-6">{isLogin ? 'Вход в TeleChat' : 'Регистрация'}</h2>
+                    
+                    <form onSubmit={handleAuth} className="w-full space-y-4">
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            className="w-full p-3 bg-[#2c2c2c] rounded-xl border border-transparent focus:border-blue-500 outline-none transition"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                        <input
+                            type="password"
+                            placeholder="Пароль"
+                            className="w-full p-3 bg-[#2c2c2c] rounded-xl border border-transparent focus:border-blue-500 outline-none transition"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
                         
-                        {/* Хедер чата */}
-                        <div className="h-14 bg-white border-b border-gray-200 flex items-center px-4 justify-between shadow-sm z-10">
-                            <div className="flex items-center">
-                                <div className="md:hidden mr-3 cursor-pointer" onClick={handleLogout}>
-                                    <i data-lucide="arrow-left" className="w-6 h-6 text-gray-500"></i>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="font-bold text-gray-800">Общий чат</span>
-                                    <span className="text-xs text-blue-400 font-medium">все участники</span>
-                                </div>
-                            </div>
-                            <img src={user.photoURL} className="w-8 h-8 rounded-full" alt="Me" />
-                        </div>
+                        <button 
+                            disabled={loading}
+                            className="w-full py-3 bg-[#8774e1] hover:bg-[#6f5ec2] rounded-xl font-bold transition disabled:opacity-50"
+                        >
+                            {loading ? 'Загрузка...' : (isLogin ? 'Войти' : 'Создать аккаунт')}
+                        </button>
+                    </form>
 
-                        {/* Область сообщений */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                            {messages.map((msg) => (
-                                <Message 
-                                    key={msg.id} 
-                                    {...msg} 
-                                    isOwn={msg.uid === user.uid} 
-                                />
-                            ))}
-                            <div ref={bottomRef}></div>
-                        </div>
-
-                        {/* Поле ввода */}
-                        <div className="p-4 bg-white md:bg-transparent">
-                            <form onSubmit={handleSend} className="max-w-4xl mx-auto relative flex items-center bg-white rounded-2xl shadow-sm border border-gray-200 px-2 py-2">
-                                <button type="button" className="p-2 text-gray-400 hover:text-gray-600 transition">
-                                    <i data-lucide="paperclip" className="w-5 h-5"></i>
-                                </button>
-                                <input 
-                                    type="text" 
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    placeholder="Написать сообщение..." 
-                                    className="flex-1 px-2 py-1 outline-none text-gray-700 bg-transparent"
-                                />
-                                <button 
-                                    type="submit" 
-                                    disabled={!newMessage.trim()}
-                                    className={`p-2 rounded-full transition duration-200 ${newMessage.trim() ? 'text-blue-500 hover:bg-blue-50' : 'text-gray-300'}`}
-                                >
-                                    <i data-lucide="send" className="w-6 h-6 transform rotate-0"></i>
-                                </button>
-                            </form>
-                        </div>
-
-                    </div>
+                    <button 
+                        onClick={() => setIsLogin(!isLogin)}
+                        className="mt-6 text-blue-400 hover:text-blue-300 text-sm"
+                    >
+                        {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Есть аккаунт? Войти'}
+                    </button>
                 </div>
             );
         }
+
+        // Основной чат
+        function Chat({ session, supabase }) {
+            const [messages, setMessages] = useState([]);
+            const [newMessage, setNewMessage] = useState('');
+            const messagesEndRef = useRef(null);
+
+            // Получение имени пользователя из email (до @)
+            const getUsername = (email) => email ? email.split('@')[0] : 'User';
+
+            useEffect(() => {
+                // 1. Загрузка истории
+                const fetchMessages = async () => {
+                    const { data, error } = await supabase
+                        .from('messages')
+                        .select('*')
+                        .order('created_at', { ascending: true })
+                        .limit(100); // последние 100
+                    
+                    if (!error && data) setMessages(data);
+                };
+
+                fetchMessages();
+
+                // 2. Подписка на обновления (Realtime)
+                const channel = supabase
+                    .channel('public:messages')
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+                        setMessages((prev) => [...prev, payload.new]);
+                    })
+                    .subscribe();
+
+                return () => {
+                    supabase.removeChannel(channel);
+                };
+            }, [supabase]);
+
+            // Автоскролл вниз
+            useEffect(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [messages]);
+
+            const sendMessage = async (e) => {
+                e.preventDefault();
+                if (!newMessage.trim()) return;
+
+                const { error } = await supabase.from('messages').insert({
+                    user_id: session.user.id,
+                    email: session.user.email,
+                    content: newMessage
+                });
+
+                if (error) console.error('Error sending:', error);
+                setNewMessage('');
+            };
+
+            const handleLogout = async () => {
+                await supabase.auth.signOut();
+            };
+
+            // Форматирование времени
+            const formatTime = (isoString) => {
+                const date = new Date(isoString);
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            };
+
+            return (
+                <div className="flex flex-col h-full">
+                    {/* Header */}
+                    <div className="h-14 bg-[#212121] flex items-center justify-between px-4 shadow-md z-10">
+                        <div className="font-bold text-lg">Общий чат</div>
+                        <button onClick={handleLogout} className="text-gray-400 hover:text-white text-sm">
+                            Выйти
+                        </button>
+                    </div>
+
+                    {/* Messages Area */}
+                    <div className="flex-1 overflow-y-auto p-4 chat-bg relative">
+                        <div className="absolute inset-0 bg-black/50 pointer-events-none"></div> {/* Затемнение фона */}
+                        <div className="relative z-10 space-y-2">
+                            {messages.map((msg) => {
+                                const isOwn = msg.user_id === session.user.id;
+                                return (
+                                    <div 
+                                        key={msg.id} 
+                                        className={`flex w-full ${isOwn ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                        <div 
+                                            className={`max-w-[75%] px-3 py-2 rounded-2xl relative shadow-md text-sm ${isOwn ? 'message-own' : 'message-other'}`}
+                                        >
+                                            {!isOwn && (
+                                                <div className="text-xs text-[#8774e1] font-bold mb-1">
+                                                    {getUsername(msg.email)}
+                                                </div>
+                                            )}
+                                            <div className="break-words text-white">{msg.content}</div>
+                                            <div className="text-[10px] text-gray-300 text-right mt-1 opacity-70">
+                                                {formatTime(msg.created_at)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            <div ref={messagesEndRef} />
+                        </div>
+                    </div>
+
+                    {/* Input Area */}
+                    <form onSubmit={sendMessage} className="bg-[#212121] p-2 flex items-end gap-2">
+                        <input
+                            type="text"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            placeholder="Сообщение..."
+                            className="flex-1 bg-black/20 text-white rounded-xl px-4 py-3 outline-none focus:ring-1 focus:ring-[#8774e1] transition resize-none"
+                        />
+                        <button 
+                            type="submit"
+                            className="w-12 h-12 flex items-center justify-center bg-[#8774e1] hover:bg-[#6f5ec2] rounded-full transition text-white shadow-lg shrink-0"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
+                    </form>
+                </div>
+            );
+        }
+
+        // Инициализация иконок после рендера
+        setTimeout(() => {
+            if (window.lucide) window.lucide.createIcons();
+        }, 100);
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
